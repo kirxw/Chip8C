@@ -1,8 +1,13 @@
+#include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <time.h>
 
-#define PIXEL_ON  "█"
-#define PIXEL_OFF " "
+#define PIXEL_ON  "██"
+#define PIXEL_OFF "  "
 #define TOP_LEFT "\033[H"
+
+clock_t CPU_SLEEP_TIME = 1/700 * CLOCKS_PER_SEC;
 
 uint8_t memory[4096];
 uint16_t stack[16];
@@ -17,25 +22,18 @@ uint16_t program_counter; // current instruction (mem index?)
 uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
 uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 
-// LOOP
-// ummm get the current instruction (pc represents it in memory)
-// immediately skip ahead 2 (each instruction is 2 bytes)
-// decode the instruction so i guess just handle it or sum
-// why did the article have this as a third step ill just run it when i decode it or sumething idkdf
-
 void render_display(void) {
     printf(TOP_LEFT);
     for (int y = 0; y < 32; y++) {
         // pixel rows are stored backward so this is fine.
         uint64_t row = display[y];
-        uint64_t mask = 1;
-
+        
         for (int x = 0; x < 64; x++) {
-            printf("%s",((row & mask) > 0)?PIXEL_ON:PIXEL_OFF);
-            mask <<= 1;
+            printf("%s", ((row >> (63 - x)) & 1) ? PIXEL_ON : PIXEL_OFF);
         }
         printf("\n");
     }
+    fflush(stdout);
 }
 
 void execute_instruction(uint8_t byte1, uint8_t byte2) {
@@ -79,14 +77,55 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0xC:
             break;
         case 0xD: // draw XYN
-            uint64_t row = display[Y];
-            uint32_t mask = (uint64_t)1 << (/*63-*/X); // take a 1 and shift it over so the byte is in the position from the left corresponding to the target X
-            display[X] ^= mask;
+            // i genuinely can't remember why i named them xc and yc, what does the c even stand for??? character?????
+            uint8_t xc = registers[X] % 64;
+            uint8_t yc = registers[Y] % 32;
+            
+            registers[0xF] = 0; // set to 1 if collision happens
+            for (int row = 0; row < N && (row+yc) < 32; row++) {
+                uint64_t sprite = memory[index_register + row];
+                sprite = (xc <= 56) ? sprite << (56-xc) : xc >> (xc-56); //rightshift instead if it clips off
+                if (display[yc+row] & sprite) {
+                    registers[0xF] = 1; // collision happened
+                }
+                display[yc+row] ^= sprite;
+            }
+
             render_display();
             break;
         case 0xE:
             break;
         case 0xF:
             break;
+    }
+}
+
+// LOOP
+// ummm get the current instruction (pc represents it in memory)
+// immediately skip ahead 2 (each instruction is 2 bytes)
+// decode the instruction so i guess just handle it or sum
+// why did the article have this as a third step ill just run it when i decode it or sumething idkdf
+
+void step_execution_loop(void) {
+    uint8_t byte1 = memory[program_counter];
+    uint8_t byte2 = memory[program_counter+1];
+    program_counter += 2;
+
+    execute_instruction(byte1,byte2);
+}
+
+void load_file(FILE *file_pointer) {
+    program_counter = 0x200;
+    fread(memory+0x200,1,4096-0x200,file_pointer);
+}
+
+void loop(void) {
+    clock_t last_instruction = clock();
+    while (1) {
+        clock_t current_time = clock();
+        if ((current_time-last_instruction) > CPU_SLEEP_TIME) {
+            last_instruction += CPU_SLEEP_TIME;
+            step_execution_loop();
+        }
     }
 }
