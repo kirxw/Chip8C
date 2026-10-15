@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+#define PIXEL_ON  "█"
+#define PIXEL_OFF " "
+#define TOP_LEFT "\033[H"
+
 uint8_t memory[4096];
 uint16_t stack[16];
 uint8_t registers[16];
@@ -10,7 +14,7 @@ uint8_t sound_timer; // also counts down each frame
 uint16_t index_register; // points to a register, probably a number index instead of a pointer?
 uint16_t program_counter; // current instruction (mem index?)
 
-uint32_t display[64]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
+uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
 uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 
 // LOOP
@@ -18,6 +22,21 @@ uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 // immediately skip ahead 2 (each instruction is 2 bytes)
 // decode the instruction so i guess just handle it or sum
 // why did the article have this as a third step ill just run it when i decode it or sumething idkdf
+
+void render_display(void) {
+    printf(TOP_LEFT);
+    for (int y = 0; y < 32; y++) {
+        // pixel rows are stored backward so this is fine.
+        uint64_t row = display[y];
+        uint64_t mask = 1;
+
+        for (int x = 0; x < 64; x++) {
+            printf("%s",((row & mask) > 0)?PIXEL_ON:PIXEL_OFF);
+            mask <<= 1;
+        }
+        printf("\n");
+    }
+}
 
 void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint8_t instruction_type = byte1 >> 4;
@@ -60,9 +79,10 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0xC:
             break;
         case 0xD: // draw XYN
-            uint64_t column = display[X];
-            uint32_t mask = 1 << (31-Y); // take a 1 and shift it over so the byte is in the position from the top corresponding to the target Y
+            uint64_t row = display[Y];
+            uint32_t mask = (uint64_t)1 << (/*63-*/X); // take a 1 and shift it over so the byte is in the position from the left corresponding to the target X
             display[X] ^= mask;
+            render_display();
             break;
         case 0xE:
             break;
