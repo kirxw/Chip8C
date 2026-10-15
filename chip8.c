@@ -10,7 +10,7 @@ uint8_t sound_timer; // also counts down each frame
 uint16_t index_register; // points to a register, probably a number index instead of a pointer?
 uint16_t program_counter; // current instruction (mem index?)
 
-uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
+uint32_t display[64]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
 uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 
 // LOOP
@@ -60,6 +60,9 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0xC:
             break;
         case 0xD: // draw XYN
+            uint64_t column = display[X];
+            uint32_t mask = 1 << (31-Y); // take a 1 and shift it over so the byte is in the position from the top corresponding to the target Y
+            display[X] ^= mask;
             break;
         case 0xE:
             break;
