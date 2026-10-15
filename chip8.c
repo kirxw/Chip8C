@@ -29,9 +29,10 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint16_t NNN = ((X << 8) | (Y << 4)) | N;
 
     switch (instruction_type) {
-        case 0x0:
+        case 0x0: // clear?
             break;
-        case 0x1:
+        case 0x1: // jump
+            program_counter = NNN;
             break;
         case 0x2:
             break;
@@ -41,21 +42,24 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             break;
         case 0x5:
             break;
-        case 0x6:
+        case 0x6: // set register X
+            registers[X] = NN;
             break;
-        case 0x7:
+        case 0x7: // add value to register X
+            registers[X] += NN;
             break;
         case 0x8:
             break;
         case 0x9:
             break;
-        case 0xA:
+        case 0xA: // set index register
+            index_register = NNN;
             break;
         case 0xB:
             break;
         case 0xC:
             break;
-        case 0xD:
+        case 0xD: // draw XYN
             break;
         case 0xE:
             break;
