@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include "font.h"
 
 #define COSMAC_MODE = 0;
 
@@ -219,7 +220,20 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     }
                     break;
                 case 0x29: // FX29 set index reg to whereever the index of a character sprite thingy specified by VX is kept in memory
-                    
+                    register_index = 0x50 + memory[X];
+                    break;
+                case 0x33: // FX33 convert VX to 3 decimal digits, store in 3 parts starting at memory[indexreg]
+                    uint8_t VX = memory[X];
+                    uint8_t hundreds,tens,ones;
+                    ones = VX % 10;
+                    VX -= ones;
+                    tens = (VX % 100)/10;
+                    VX -= tens;
+                    hundreds = VX/100;
+
+                    memory[register_index] = hundres;
+                    memory[register_index+1] = tens;
+                    memory[register_index+2] = ones;
                     break;
             }
             break;
@@ -245,6 +259,7 @@ void load_file(FILE *file_pointer) {
     register_index = 0;
     delay_timer,sound_timer = 0,0;
     stack_position = 0;
+    memcpy(memory+0x50,fontset,sizeof(fontset));
     memset(stack,0,sizeof(stack));
     memset(registers,0,sizeof(registers));
     fread(memory+0x200,1,4096-0x200,file_pointer);
