@@ -42,11 +42,17 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint8_t Y = byte2 >> 4;
     uint8_t N = byte2 & 0x0F;
 
-    uint8_t NN = (Y << 4) | N;
+    uint8_t NN = byte2; // (Y << 4) | N;
     uint16_t NNN = ((X << 8) | (Y << 4)) | N;
 
     switch (instruction_type) {
-        case 0x0: // clear?
+        case 0x0:
+            switch (byte2) {
+            case 0xE0: // clear display
+                memset(display,0,sizeof(display));
+                render_display();
+                break;
+            }
             break;
         case 0x1: // jump
             program_counter = NNN;
