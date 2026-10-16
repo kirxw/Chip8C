@@ -24,10 +24,19 @@ uint16_t program_counter; // current instruction (mem index?)
 uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
 uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 
+void push_stack(uint16_t item) {
+    // stack is a little wonky since this is an unsigned int... should be fine?
+    stack[stack_position] = item;
+    stack_position++;
+}
+
+void pop_stack(void) {
+    stack_position--;
+}
+
 void render_display(void) {
     printf(TOP_LEFT);
     for (int y = 0; y < 32; y++) {
-        // pixel rows are stored backward so this is fine.
         uint64_t row = display[y];
         
         for (int x = 0; x < 64; x++) {
@@ -45,7 +54,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint8_t N = byte2 & 0x0F;
 
     uint8_t NN = byte2; // (Y << 4) | N;
-    uint16_t NNN = ((X << 8) | (Y << 4)) | N;
+    uint16_t NNN = (X << 8) | NN; // (Y << 4)) | N;
 
     switch (instruction_type) {
         case 0x0:
@@ -54,40 +63,74 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 memset(display,0,sizeof(display));
                 render_display();
                 break;
-            case 0xEE:
-                
+            case 0xEE: // return from subroutine
+                pop_stack();
+                program_counter = stack[stack_position];
                 break;
             }
             break;
         case 0x1: // jump
             program_counter = NNN;
             break;
-        case 0x2:
+        case 0x2: // new subroutine
+            stack[stack_position] = program_counter;
+            program_counter = NNN;
             break;
-        case 0x3:
+        case 0x3: // 3XNN skip an instruction if VX = NN
+            if (registers[X] == NN) {
+                program_counter += 2;
+            }
             break;
-        case 0x4:
+        case 0x4: // 4XNN skip an instruction if VX != NN
+            if (registers[X] != NN) {
+                program_counter += 2;
+            }
             break;
-        case 0x5:
+        case 0x5: // 5XY0 skips if VX and VY are equal
+            if (registers[X] == registers[Y]) {
+                program_counter += 2;
+            }
             break;
-        case 0x6: // set register X
+        case 0x6: // 6XNN set register X to NN
             registers[X] = NN;
             break;
-        case 0x7: // add value to register X
+        case 0x7: // 7XNN add NN to register X
             registers[X] += NN;
             break;
-        case 0x8:
+        case 0x8: // math operators
+            switch (N) {
+            case 0x0: // 8XY0 set the value of VX to VY
+                memory[X] = memory[Y];
+                break;
+            case 0x1: // 8XY1 set value of VX to (VX bor VY)
+                memory[X] |= memory[Y];
+                break;
+            case 0x2: // 8XY2 set value of VX to (VX band VY)
+                memory[X] &= memory[Y];
+                break;
+            case 0x3: //8XY3 set value of VX to (VX bxor VY)
+                memory[X] ^= memory[Y];
+                break;
+            case 0x4: //8XY4 set value of VX to (VX + VY), set VF to 1 if it overflows
+                uint8_t VX,VY = memory[X],memory[Y];
+                registers[0xF] = (VY > (255-VX));
+                memory[X] += VY;
+                break;
+            }
             break;
-        case 0x9:
+        case 0x9: // 9XY0 skips if VX and VY aint equal
+            if (registers[X] != registers[Y]) {
+                program_counter += 2;
+            }
             break;
-        case 0xA: // set index register
+        case 0xA: // ANNN set target registers index
             register_index = NNN;
             break;
         case 0xB:
             break;
         case 0xC:
             break;
-        case 0xD: // draw XYN
+        case 0xD: // DXYN draw sprite found in memory at the current register index at positon VX, VY
             // i genuinely can't remember why i named them xc and yc, what does the c even stand for??? character?????
             uint8_t xc = registers[X] % 64;
             uint8_t yc = registers[Y] % 32;
