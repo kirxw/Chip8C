@@ -3,6 +3,8 @@
 #include <string.h>
 #include <time.h>
 
+#define COSMAC_MODE = 0;
+
 #define PIXEL_ON  "██"
 #define PIXEL_OFF "  "
 #define TOP_LEFT "\033[H"
@@ -116,6 +118,32 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 registers[0xF] = (VY > (255-VX));
                 memory[X] += VY;
                 break;
+            case 0x5: //8XY5 set VX to VX - VY
+                uint8_t VX,VY = memory[x],memory[Y];
+                registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
+                memory[X] -= VY;
+                break;
+            case 0x7: // 8XY7 set VX to VY - VX
+                uint8_t VX,VY = memory[x],memory[Y];
+                registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
+                memory[X] = VY - VX;
+                break;
+            case 0x6: // 8XY6 shift right
+                uint8_t VX,VY = memory[x],memory[Y];
+                if (COSMAC_MODE) {
+                    VX = VY;
+                }
+                registers[0xF] = VX & 1; // 1 if the bit shifted out was a 1
+                memory[X] = VX >> 1;
+                break;
+            case 0xE: // 8XYE shift left
+                uint8_t VX,VY = memory[x],memory[Y];
+                if (COSMAC_MODE) {
+                   VX = VY;
+                }
+                registers[0xF] = VX & ((uint8_t)1 << 7);
+                memory[X] = VX << 1;
+                break;
             }
             break;
         case 0x9: // 9XY0 skips if VX and VY aint equal
@@ -123,12 +151,14 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 program_counter += 2;
             }
             break;
-        case 0xA: // ANNN set target registers index
+        case 0xA: // ANNN set the index register
             register_index = NNN;
             break;
-        case 0xB:
+        case 0xB: // BNNN jump with offset (or BXNN)
+            program_count = NNN + (COSMAC_MODE ? registers[0x0] : registers[X]);
             break;
-        case 0xC:
+        case 0xC: // CXNN set VX to ((random num) & NN)
+            memory[X] = (uint8_t)rand() & NN;
             break;
         case 0xD: // DXYN draw sprite found in memory at the current register index at positon VX, VY
             // i genuinely can't remember why i named them xc and yc, what does the c even stand for??? character?????
@@ -148,8 +178,50 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             render_display();
             break;
         case 0xE:
+            switch (NN) {
+                uint16_t mask = (uint16_t)1 << memory[X];
+                uint16_t key_down = keyboard & mask;
+                
+                case 0x9E: // EX9E skip forward if key down
+                    if (key_down) {
+                        program_counter += 2;
+                    }
+                    break;
+                case: 0xA1: // EXA1 skip forward if key not down
+                    if (!key_down) {
+                        program_counter += 2;
+                    }
+                    break;
+            }
             break;
-        case 0xF:
+        case 0xF: // timers
+            switch (NN) {
+                case 0x07: // FX07 set VX to value of delay timer
+                    memory[X] = delay_timer;
+                    break;
+                case 0x15: // FX15 set delay_timer to value of VX
+                    delay_timer = memory[X];
+                    break;
+                case 0x18: // FX18 set sound_timer to value of VX
+                    sound_timer = memory[X];
+                    break;
+                case 0x1E: // FX1E add VX to the index register thingamabob
+                    register_index += memory[X];
+                    if (!COSMAC_MODE) {
+                        registers[0xF] = register_index > 0x1000;
+                    }
+                    break;
+                case 0x0A: // FX0A block until a key pressed, set VX to the keycode
+                    if (keyboard) {
+                        memory[VX] = __builtin_ctz(keyboard);
+                    } else {
+                        program_counter -= 2;
+                    }
+                    break;
+                case 0x29: // FX29 set index reg to whereever the index of a character sprite thingy specified by VX is kept in memory
+                    
+                    break;
+            }
             break;
     }
 }
