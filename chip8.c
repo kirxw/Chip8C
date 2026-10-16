@@ -13,10 +13,12 @@ uint8_t memory[4096];
 uint16_t stack[16];
 uint8_t registers[16];
 
+uint16_t stack_position;
+
 uint8_t delay_timer; // counts down each frame
 uint8_t sound_timer; // also counts down each frame
 
-uint16_t index_register; // points to a register, probably a number index instead of a pointer?
+uint16_t register_index; // points to a register, probably a number index instead of a pointer?
 uint16_t program_counter; // current instruction (mem index?)
 
 uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
@@ -52,6 +54,9 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 memset(display,0,sizeof(display));
                 render_display();
                 break;
+            case 0xEE:
+                
+                break;
             }
             break;
         case 0x1: // jump
@@ -76,7 +81,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0x9:
             break;
         case 0xA: // set index register
-            index_register = NNN;
+            register_index = NNN;
             break;
         case 0xB:
             break;
@@ -89,7 +94,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             
             registers[0xF] = 0; // set to 1 if collision happens
             for (int row = 0; row < N && (row+yc) < 32; row++) {
-                uint64_t sprite = memory[index_register + row];
+                uint64_t sprite = memory[register_index + row];
                 sprite = (xc <= 56) ? sprite << (56-xc) : xc >> (xc-56); //rightshift instead if it clips off
                 if (display[yc+row] & sprite) {
                     registers[0xF] = 1; // collision happened
@@ -122,6 +127,11 @@ void step_execution_loop(void) {
 
 void load_file(FILE *file_pointer) {
     program_counter = 0x200;
+    register_index = 0;
+    delay_timer,sound_timer = 0,0;
+    stack_position = 0;
+    memset(stack,0,sizeof(stack));
+    memset(registers,0,sizeof(registers));
     fread(memory+0x200,1,4096-0x200,file_pointer);
 }
 
