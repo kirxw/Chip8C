@@ -235,6 +235,12 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     memory[register_index+1] = tens;
                     memory[register_index+2] = ones;
                     break;
+                case 0x55: // FX55 store the values in the registry from V0 to VX in memory starting at I
+                    uint8_t VX = memory[X];    
+                    for (int i = 0; i < VX; i++) {
+                        
+                    }
+                    break;
             }
             break;
     }
