@@ -9,27 +9,27 @@ This is, unsurprisingly, a Chip-8 emulator written entirely in C! It takes a pat
 ## Building Chip8C Yourself
 ### Requirements
 You'll need ``gcc``,`make`, and the [SDL2 development libraries](https://www.libsdl.org/) installed.
-#### Arch
+#### SDL2 on Arch
 ```bash
 sudo pacman -S sdl2-compat
 ```
-#### Debian / Ubuntu
+#### SDL2 on Debian / Ubuntu
 ```bash
 sudo apt install build-essential libsdl2-dev libsdl2-image-dev
 ```
-#### MacOs (Via Homebrew)
+#### SDL2 on MacOs (Via Homebrew)
 ```bash
 brew install sdl2 sdl2_image
 ```
-#### Fedora / Red Hat
+#### SDL2 on Fedora / Red Hat
 ```bash
 sudo dnf groupinstall "Development Tools"
 sudo dnf install SDL2-devel SDL2_image-devel
 ```
-#### Windows
+#### SDL2 on Windows
 Ima be real for this one you're gonna use MSYS2 or write your own makefile <3
 
-### Compilation
+## Compilation
 Run `make` from the root of the project directory. The binary will appear in the automatically generated `build` folder.
 
 ## Usage
