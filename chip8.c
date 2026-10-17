@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include "font.h"
 
 #define COSMAC_MODE 0
@@ -34,8 +35,9 @@ void push_stack(uint16_t item) {
     stack_position++;
 }
 
-void pop_stack(void) {
+uint16_t pop_stack(void) {
     stack_position--;
+    return stack[stack_position];
 }
 
 void render_display(void) {
@@ -60,7 +62,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint8_t NN = byte2; // (Y << 4) | N;
     uint16_t NNN = (X << 8) | NN; // (Y << 4)) | N;
 
-    uint8_t VX = memory[X],VY = memory[Y];
+    uint8_t VX = registers[X],VY = registers[Y];
 
     switch (instruction_type) {
         case 0x0:
@@ -70,8 +72,8 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 render_display();
                 break;
             case 0xEE: // return from subroutine
-                pop_stack();
-                program_counter = stack[stack_position];
+                program_counter = pop_stack();
+                printf("Returning to stack point %" PRIu16 "\n" ,stack_position);
                 break;
             }
             break;
@@ -79,7 +81,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             program_counter = NNN;
             break;
         case 0x2: // new subroutine
-            stack[stack_position] = program_counter;
+            push_stack(program_counter);
             program_counter = NNN;
             break;
         case 0x3: // 3XNN skip an instruction if VX = NN
@@ -106,43 +108,43 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0x8: // math operators
             switch (N) {
                 case 0x0: // 8XY0 set the value of VX to VY
-                    memory[X] = memory[Y];
+                    registers[X] = registers[Y];
                     break;
                 case 0x1: // 8XY1 set value of VX to (VX bor VY)
-                    memory[X] |= memory[Y];
+                    registers[X] |= registers[Y];
                     break;
                 case 0x2: // 8XY2 set value of VX to (VX band VY)
-                    memory[X] &= memory[Y];
+                    registers[X] &= registers[Y];
                     break;
                 case 0x3: //8XY3 set value of VX to (VX bxor VY)
-                    memory[X] ^= memory[Y];
+                    registers[X] ^= registers[Y];
                     break;
                 case 0x4: //8XY4 set value of VX to (VX + VY), set VF to 1 if it overflows
-                    uint8_t VX = memory[X],VY = memory[Y];
+                    uint8_t VX = registers[X],VY = registers[Y];
                     registers[0xF] = (VY > (255-VX));
-                    memory[X] += VY;
+                    registers[X] += VY;
                     break;
                 case 0x5: //8XY5 set VX to VX - VY
                     registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
-                    memory[X] -= VY;
+                    registers[X] -= VY;
                     break;
                 case 0x7: // 8XY7 set VX to VY - VX
                     registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
-                    memory[X] = VY - VX;
+                    registers[X] = VY - VX;
                     break;
                 case 0x6: // 8XY6 shift right
                     if (COSMAC_MODE) {
                         VX = VY;
                     }
                     registers[0xF] = VX & 1; // 1 if the bit shifted out was a 1
-                    memory[X] = VX >> 1;
+                    registers[X] = VX >> 1;
                     break;
                 case 0xE: // 8XYE shift left
                     if (COSMAC_MODE) {
                     VX = VY;
                     }
                     registers[0xF] = VX & ((uint8_t)1 << 7);
-                    memory[X] = VX << 1;
+                    registers[X] = VX << 1;
                     break;
             }
             break;
@@ -158,7 +160,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             program_counter = NNN + (COSMAC_MODE ? registers[0x0] : registers[X]);
             break;
         case 0xC: // CXNN set VX to ((random num) & NN)
-            memory[X] = (uint8_t)rand() & NN;
+            registers[X] = (uint8_t)rand() & NN;
             break;
         case 0xD: // DXYN draw sprite found in memory at the current register index at positon VX, VY
             // i genuinely can't remember why i named them xc and yc, what does the c even stand for??? character?????
@@ -178,7 +180,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             render_display();
             break;
         case 0xE:
-            uint16_t mask = (uint16_t)1 << memory[X];
+            uint16_t mask = (uint16_t)1 << registers[X];
             uint16_t key_down = keyboard & mask;
             switch (NN) {
                 case 0x9E: // EX9E skip forward if key down
@@ -196,32 +198,32 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
         case 0xF: // timers
             switch (NN) {
                 case 0x07: // FX07 set VX to value of delay timer
-                    memory[X] = delay_timer;
+                    registers[X] = delay_timer;
                     break;
                 case 0x15: // FX15 set delay_timer to value of VX
-                    delay_timer = memory[X];
+                    delay_timer = registers[X];
                     break;
                 case 0x18: // FX18 set sound_timer to value of VX
-                    sound_timer = memory[X];
+                    sound_timer = registers[X];
                     break;
                 case 0x1E: // FX1E add VX to the index register thingamabob
-                    register_index += memory[X];
+                    register_index += registers[X];
                     if (!COSMAC_MODE) {
                         registers[0xF] = register_index > 0x1000;
                     }
                     break;
                 case 0x0A: // FX0A block until a key pressed, set VX to the keycode
                     if (keyboard) {
-                        memory[X] = __builtin_ctz(keyboard);
+                        registers[X] = __builtin_ctz(keyboard);
                     } else {
                         program_counter -= 2;
                     }
                     break;
                 case 0x29: // FX29 set index reg to whereever the index of a character sprite thingy specified by VX is kept in memory
-                    register_index = 0x50 + memory[X];
+                    register_index = 0x50 + registers[X];
                     break;
                 case 0x33: // FX33 convert VX to 3 decimal digits, store in 3 parts starting at memory[indexreg]
-                    uint8_t VX = memory[X];
+                    uint8_t VX = registers[X];
                     uint8_t hundreds,tens,ones;
                     ones = VX % 10;
                     VX -= ones;
