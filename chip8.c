@@ -42,7 +42,9 @@ uint16_t pop_stack(void) {
     return stack[stack_position];
 }
 
+int SHOULD_RENDER = 0;
 void render_display(void) {
+    SHOULD_RENDER = 0;
     printf(TOP_LEFT);
     for (int y = 0; y < 32; y++) {
         uint64_t row = display[y];
@@ -71,6 +73,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             switch (byte2) {
             case 0xE0: // clear display
                 memset(display,0,sizeof(display));
+                SHOULD_RENDER = 1;
                 break;
             case 0xEE: // return from subroutine
                 program_counter = pop_stack();
@@ -176,6 +179,8 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 }
                 display[yc+row] ^= sprite;
             }
+
+            SHOULD_RENDER = 1;
             break;
         case 0xE:
             uint16_t mask = 1 << (VX & 0xF);
@@ -280,7 +285,7 @@ void loop(void) {
             last_frame += CPU_SLEEP_TIME;
             if (delay_timer) delay_timer--;
             if (sound_timer) sound_timer--;
-            render_display();
+            if (SHOULD_RENDER) render_display();
         }
         if ((current_time-last_instruction) > CPU_SLEEP_TIME) {
             last_instruction += CPU_SLEEP_TIME;
