@@ -30,6 +30,8 @@ uint16_t program_counter; // current instruction (mem index?)
 uint64_t display[32]; // 64x32, will use xor operators to manipulate since it's 1d (saves 7 bits per pixel i think? ts not worth it)
 uint16_t keyboard; // same concept as above, xor saves 7 bits per key :sob:
 
+int drew_this_frame = 0;
+
 void push_stack(uint16_t item) {
     // stack is a little wonky since this is an unsigned int... should be fine?
     stack[stack_position] = item;
@@ -166,6 +168,13 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             break;
         case 0xD: // DXYN draw sprite found in memory at the current register index at positon VX, VY
             // i genuinely can't remember why i named them xc and yc, what does the c even stand for??? character?????
+
+            if (COSMAC_MODE && drew_this_frame) {
+                program_counter -= 2;
+                break;
+            }
+            drew_this_frame = 1;
+
             uint8_t xc = registers[X] % 64;
             uint8_t yc = registers[Y] % 32;
             

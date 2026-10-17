@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
 
     FILE *file_pointer = fopen(argv[1],"r");
     if (file_pointer == NULL) {
-        perror("Failed to open file\n");
+        printf("Failed to open file at '%s'",argv[1]);
+        perror("");
         return 1;
     }
 

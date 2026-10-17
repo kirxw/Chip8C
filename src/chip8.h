@@ -13,6 +13,8 @@ extern int SHOULD_RENDER;
 extern int COSMAC_MODE;
 extern int AMIGA_MODE;
 
+extern int drew_this_frame;
+
 void step_chip(void);
 void load_file(FILE *file_pointer);
 

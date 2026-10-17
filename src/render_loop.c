@@ -23,6 +23,8 @@ SDL_Window *win;
 SDL_Renderer *renderer;
 SDL_Texture *texture;
 
+uint8_t brightness_scaled_pixels[64*32];
+
 int get_key_num(SDL_Scancode scancode) {
     for (int i = 0; i < 16; i++) {
         if (keyboard_layout[i] == scancode) return i;
@@ -40,7 +42,15 @@ void render_display(void) {
     for (int y = 0; y < 32; y++) {
         uint64_t row = display[y];
         for (int x = 0; x < 64; x++) {
-            pixels[y*64+x] = (((row >> (63-x))&1)) ? 0xFFFFFFFF : 0xFF000000;
+            int i = y*64+x;
+            uint8_t brightness = brightness_scaled_pixels[i];
+            if ((row >> (63-x))&1) {
+                brightness = 255;
+            } else {
+                brightness = brightness > 40 ? brightness-40 : 0;
+            }
+            brightness_scaled_pixels[i] = brightness;
+            pixels[i] = 0xFF000000 | (brightness << 16) | (brightness << 8) | brightness;
         }
     }
 
@@ -100,6 +110,7 @@ int main_loop(void) {
             }
         }
 
+        drew_this_frame = 0;
         for (int i = 0; i < INSTRUCTIONS_PER_FRAME; i++) step_chip();
         if (sound_timer) sound_timer--;
         if (delay_timer) delay_timer--;
@@ -107,7 +118,7 @@ int main_loop(void) {
         Uint64 delta = SDL_GetTicks64() - last_frame;
         if (FRAME_SLEEP_MS > delta) SDL_Delay(FRAME_SLEEP_MS-delta);
         last_frame += FRAME_SLEEP_MS;
-        if (SHOULD_RENDER) render_display();
+        /*if (SHOULD_RENDER) */render_display();
     }
 
     cleanup_display();
