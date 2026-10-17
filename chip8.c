@@ -14,6 +14,7 @@
 #define TOP_LEFT "\033[H"
 
 clock_t CPU_SLEEP_TIME = CLOCKS_PER_SEC / 700;
+clock_t FRAME_SLEEP_TIME = CLOCKS_PER_SEC / 60;
 
 uint8_t memory[4096];
 uint16_t stack[16];
@@ -70,7 +71,6 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             switch (byte2) {
             case 0xE0: // clear display
                 memset(display,0,sizeof(display));
-                render_display();
                 break;
             case 0xEE: // return from subroutine
                 program_counter = pop_stack();
@@ -176,8 +176,6 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 }
                 display[yc+row] ^= sprite;
             }
-
-            render_display();
             break;
         case 0xE:
             uint16_t mask = 1 << (VX & 0xF);
@@ -275,8 +273,15 @@ void load_file(FILE *file_pointer) {
 
 void loop(void) {
     clock_t last_instruction = clock();
+    clock_t last_frame = last_instruction;
     while (1) {
         clock_t current_time = clock();
+        if ((current_time-last_frame) > FRAME_SLEEP_TIME) {
+            last_frame += CPU_SLEEP_TIME;
+            if (delay_timer) delay_timer--;
+            if (sound_timer) sound_timer--;
+            render_display();
+        }
         if ((current_time-last_instruction) > CPU_SLEEP_TIME) {
             last_instruction += CPU_SLEEP_TIME;
             step_execution_loop();
