@@ -13,8 +13,7 @@
 #define PIXEL_OFF "  "
 #define TOP_LEFT "\033[H"
 
-clock_t CPU_SLEEP_TIME = CLOCKS_PER_SEC / 700;
-clock_t FRAME_SLEEP_TIME = CLOCKS_PER_SEC / 60;
+int SHOULD_RENDER = 0;
 
 uint8_t memory[4096];
 uint16_t stack[16];
@@ -42,7 +41,7 @@ uint16_t pop_stack(void) {
     return stack[stack_position];
 }
 
-int SHOULD_RENDER = 0;
+/*
 void render_display(void) {
     SHOULD_RENDER = 0;
     printf(TOP_LEFT);
@@ -56,6 +55,7 @@ void render_display(void) {
     }
     fflush(stdout);
 }
+*/
 
 void execute_instruction(uint8_t byte1, uint8_t byte2) {
     uint8_t instruction_type = byte1 >> 4;
@@ -77,7 +77,6 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                 break;
             case 0xEE: // return from subroutine
                 program_counter = pop_stack();
-                printf("Returning to stack point %" PRIu16 "\n" ,stack_position);
                 break;
             }
             break;
@@ -257,7 +256,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
 // decode the instruction so i guess just handle it or sum
 // why did the article have this as a third step ill just run it when i decode it or sumething idkdf
 
-void step_execution_loop(void) {
+void step_chip(void) {
     uint8_t byte1 = memory[program_counter];
     uint8_t byte2 = memory[program_counter+1];
     program_counter += 2;
@@ -266,6 +265,7 @@ void step_execution_loop(void) {
 }
 
 void load_file(FILE *file_pointer) {
+    SHOULD_RENDER = 1;
     program_counter = 0x200;
     register_index = 0;
     delay_timer = 0;
@@ -275,22 +275,4 @@ void load_file(FILE *file_pointer) {
     memset(stack,0,sizeof(stack));
     memset(registers,0,sizeof(registers));
     fread(memory+0x200,1,4096-0x200,file_pointer);
-}
-
-void loop(void) {
-    clock_t last_instruction = clock();
-    clock_t last_frame = last_instruction;
-    while (1) {
-        clock_t current_time = clock();
-        if ((current_time-last_frame) > FRAME_SLEEP_TIME) {
-            last_frame += FRAME_SLEEP_TIME;
-            if (delay_timer) delay_timer--;
-            if (sound_timer) sound_timer--;
-            if (SHOULD_RENDER) render_display();
-        }
-        if ((current_time-last_instruction) > CPU_SLEEP_TIME) {
-            last_instruction += CPU_SLEEP_TIME;
-            step_execution_loop();
-        }
-    }
 }
