@@ -6,12 +6,12 @@
 #include <inttypes.h>
 #include "font.h"
 
-#define COSMAC_MODE 0
-#define AMIGA_MODE 0
-
 #define PIXEL_ON  "██"
 #define PIXEL_OFF "  "
 #define TOP_LEFT "\033[H"
+
+int COSMAC_MODE = 0;
+int AMIGA_MODE = 0;
 
 int SHOULD_RENDER = 0;
 
