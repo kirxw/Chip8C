@@ -4,7 +4,7 @@
 #include <time.h>
 #include "font.h"
 
-#define COSMAC_MODE = 0;
+#define COSMAC_MODE 0
 
 #define PIXEL_ON  "██"
 #define PIXEL_OFF "  "
@@ -102,49 +102,49 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             break;
         case 0x8: // math operators
             switch (N) {
-            case 0x0: // 8XY0 set the value of VX to VY
-                memory[X] = memory[Y];
-                break;
-            case 0x1: // 8XY1 set value of VX to (VX bor VY)
-                memory[X] |= memory[Y];
-                break;
-            case 0x2: // 8XY2 set value of VX to (VX band VY)
-                memory[X] &= memory[Y];
-                break;
-            case 0x3: //8XY3 set value of VX to (VX bxor VY)
-                memory[X] ^= memory[Y];
-                break;
-            case 0x4: //8XY4 set value of VX to (VX + VY), set VF to 1 if it overflows
-                uint8_t VX,VY = memory[X],memory[Y];
-                registers[0xF] = (VY > (255-VX));
-                memory[X] += VY;
-                break;
-            case 0x5: //8XY5 set VX to VX - VY
-                uint8_t VX,VY = memory[x],memory[Y];
-                registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
-                memory[X] -= VY;
-                break;
-            case 0x7: // 8XY7 set VX to VY - VX
-                uint8_t VX,VY = memory[x],memory[Y];
-                registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
-                memory[X] = VY - VX;
-                break;
-            case 0x6: // 8XY6 shift right
-                uint8_t VX,VY = memory[x],memory[Y];
-                if (COSMAC_MODE) {
+                case 0x0: // 8XY0 set the value of VX to VY
+                    memory[X] = memory[Y];
+                    break;
+                case 0x1: // 8XY1 set value of VX to (VX bor VY)
+                    memory[X] |= memory[Y];
+                    break;
+                case 0x2: // 8XY2 set value of VX to (VX band VY)
+                    memory[X] &= memory[Y];
+                    break;
+                case 0x3: //8XY3 set value of VX to (VX bxor VY)
+                    memory[X] ^= memory[Y];
+                    break;
+                case 0x4: //8XY4 set value of VX to (VX + VY), set VF to 1 if it overflows
+                    uint8_t VX = memory[X],VY = memory[Y];
+                    registers[0xF] = (VY > (255-VX));
+                    memory[X] += VY;
+                    break;
+                case 0x5: //8XY5 set VX to VX - VY
+                    uint8_t VX = memory[X],VY = memory[Y];
+                    registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
+                    memory[X] -= VY;
+                    break;
+                case 0x7: // 8XY7 set VX to VY - VX
+                    uint8_t VX = memory[X],VY = memory[Y];
+                    registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
+                    memory[X] = VY - VX;
+                    break;
+                case 0x6: // 8XY6 shift right
+                    uint8_t VX = memory[X],VY = memory[Y];
+                    if (COSMAC_MODE) {
+                        VX = VY;
+                    }
+                    registers[0xF] = VX & 1; // 1 if the bit shifted out was a 1
+                    memory[X] = VX >> 1;
+                    break;
+                case 0xE: // 8XYE shift left
+                    uint8_t VX = memory[X],VY = memory[Y];
+                    if (COSMAC_MODE) {
                     VX = VY;
-                }
-                registers[0xF] = VX & 1; // 1 if the bit shifted out was a 1
-                memory[X] = VX >> 1;
-                break;
-            case 0xE: // 8XYE shift left
-                uint8_t VX,VY = memory[x],memory[Y];
-                if (COSMAC_MODE) {
-                   VX = VY;
-                }
-                registers[0xF] = VX & ((uint8_t)1 << 7);
-                memory[X] = VX << 1;
-                break;
+                    }
+                    registers[0xF] = VX & ((uint8_t)1 << 7);
+                    memory[X] = VX << 1;
+                    break;
             }
             break;
         case 0x9: // 9XY0 skips if VX and VY aint equal
@@ -156,7 +156,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             register_index = NNN;
             break;
         case 0xB: // BNNN jump with offset (or BXNN)
-            program_count = NNN + (COSMAC_MODE ? registers[0x0] : registers[X]);
+            program_counter = NNN + (COSMAC_MODE ? registers[0x0] : registers[X]);
             break;
         case 0xC: // CXNN set VX to ((random num) & NN)
             memory[X] = (uint8_t)rand() & NN;
@@ -179,16 +179,15 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             render_display();
             break;
         case 0xE:
+            uint16_t mask = (uint16_t)1 << memory[X];
+            uint16_t key_down = keyboard & mask;
             switch (NN) {
-                uint16_t mask = (uint16_t)1 << memory[X];
-                uint16_t key_down = keyboard & mask;
-                
                 case 0x9E: // EX9E skip forward if key down
                     if (key_down) {
                         program_counter += 2;
                     }
                     break;
-                case: 0xA1: // EXA1 skip forward if key not down
+                case 0xA1: // EXA1 skip forward if key not down
                     if (!key_down) {
                         program_counter += 2;
                     }
@@ -214,7 +213,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     break;
                 case 0x0A: // FX0A block until a key pressed, set VX to the keycode
                     if (keyboard) {
-                        memory[VX] = __builtin_ctz(keyboard);
+                        memory[X] = __builtin_ctz(keyboard);
                     } else {
                         program_counter -= 2;
                     }
@@ -231,7 +230,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     VX -= tens;
                     hundreds = VX/100;
 
-                    memory[register_index] = hundres;
+                    memory[register_index] = hundreds;
                     memory[register_index+1] = tens;
                     memory[register_index+2] = ones;
                     break;
