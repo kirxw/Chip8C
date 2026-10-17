@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 #include "font.h"
 
 #define COSMAC_MODE 0
@@ -58,6 +59,8 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
 
     uint8_t NN = byte2; // (Y << 4) | N;
     uint16_t NNN = (X << 8) | NN; // (Y << 4)) | N;
+
+    uint8_t VX = memory[X],VY = memory[Y];
 
     switch (instruction_type) {
         case 0x0:
@@ -120,17 +123,14 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     memory[X] += VY;
                     break;
                 case 0x5: //8XY5 set VX to VX - VY
-                    uint8_t VX = memory[X],VY = memory[Y];
                     registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
                     memory[X] -= VY;
                     break;
                 case 0x7: // 8XY7 set VX to VY - VX
-                    uint8_t VX = memory[X],VY = memory[Y];
                     registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
                     memory[X] = VY - VX;
                     break;
                 case 0x6: // 8XY6 shift right
-                    uint8_t VX = memory[X],VY = memory[Y];
                     if (COSMAC_MODE) {
                         VX = VY;
                     }
@@ -138,7 +138,6 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     memory[X] = VX >> 1;
                     break;
                 case 0xE: // 8XYE shift left
-                    uint8_t VX = memory[X],VY = memory[Y];
                     if (COSMAC_MODE) {
                     VX = VY;
                     }
@@ -234,10 +233,20 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     memory[register_index+1] = tens;
                     memory[register_index+2] = ones;
                     break;
-                case 0x55: // FX55 store the values in the registry from V0 to VX in memory starting at I
-                    uint8_t VX = memory[X];    
-                    for (int i = 0; i < VX; i++) {
-                        
+                case 0x55: // FX55 store the values in the registry from V0 to VX in memory starting at I 
+                    for (int i = 0; i <= X; i++) {
+                        memory[register_index+i] = registers[i];
+                    }
+                    if (COSMAC_MODE) {
+                        register_index += X+1;
+                    }
+                    break;
+                case 0x65: // FX65 take values from memory from I to I+X and store them in the registers, starting at 0
+                    for (int i = 0; i <= X; i++) {
+                        registers[i] = memory[register_index+i];
+                    }
+                    if (COSMAC_MODE) {
+                        register_index += X+1;
                     }
                     break;
             }
