@@ -8,8 +8,9 @@
 #include <time.h>
 #include "chip8.h"
 
-clock_t CPU_SLEEP_TIME = CLOCKS_PER_SEC / 700;
-clock_t FRAME_SLEEP_TIME = CLOCKS_PER_SEC / 60;
+const int INSTRUCTIONS_PER_FRAME = 12;
+const int FRAMES_PER_SECOND = 60;
+const int FRAME_SLEEP_MS = 1000/FRAMES_PER_SECOND; // why does this yell at me if i don't say const
 
 SDL_Scancode keyboard_layout[16] = {
     SDL_SCANCODE_X, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3,
@@ -76,27 +77,11 @@ void cleanup_display(void) {
 int main_loop(void) {
     make_display();
 
-    clock_t last_instruction = clock();
-    clock_t last_frame = last_instruction;
-
     int running = 1;
     SDL_Event event;
+
+    Uint64 last_frame = SDL_GetTicks64();
     while (running) {
-        clock_t current_time = clock();
-
-        if ((current_time-last_frame) > FRAME_SLEEP_TIME) {
-            last_frame += FRAME_SLEEP_TIME;
-            if (sound_timer) sound_timer--;
-            if (delay_timer) delay_timer--;
-
-            if (SHOULD_RENDER) render_display();
-        }
-
-        if ((current_time-last_instruction) > CPU_SLEEP_TIME) {
-            last_instruction += CPU_SLEEP_TIME;
-            step_chip();
-        }
-
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_QUIT:
@@ -113,12 +98,16 @@ int main_loop(void) {
                     break;
                 }
             }
-
-            if (event.type == SDL_QUIT) {
-                running = 0;
-                break;
-            }
         }
+
+        for (int i = 0; i < INSTRUCTIONS_PER_FRAME; i++) step_chip();
+        if (sound_timer) sound_timer--;
+        if (delay_timer) delay_timer--;
+
+        Uint64 delta = SDL_GetTicks64() - last_frame;
+        if (FRAME_SLEEP_MS > delta) SDL_Delay(FRAME_SLEEP_MS-delta);
+        last_frame += FRAME_SLEEP_MS;
+        if (SHOULD_RENDER) render_display();
     }
 
     cleanup_display();
