@@ -7,12 +7,13 @@
 #include "font.h"
 
 #define COSMAC_MODE 0
+#define AMIGA_MODE 0
 
 #define PIXEL_ON  "██"
 #define PIXEL_OFF "  "
 #define TOP_LEFT "\033[H"
 
-clock_t CPU_SLEEP_TIME = 1/700 * CLOCKS_PER_SEC;
+clock_t CPU_SLEEP_TIME = CLOCKS_PER_SEC / 700;
 
 uint8_t memory[4096];
 uint16_t stack[16];
@@ -120,17 +121,16 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     registers[X] ^= registers[Y];
                     break;
                 case 0x4: //8XY4 set value of VX to (VX + VY), set VF to 1 if it overflows
-                    uint8_t VX = registers[X],VY = registers[Y];
-                    registers[0xF] = (VY > (255-VX));
                     registers[X] += VY;
+                    registers[0xF] = (VY > (255-VX));
                     break;
                 case 0x5: //8XY5 set VX to VX - VY
-                    registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
                     registers[X] -= VY;
+                    registers[0xF] = (VX >= VY); // for whatever reason, it's backwards
                     break;
                 case 0x7: // 8XY7 set VX to VY - VX
-                    registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
                     registers[X] = VY - VX;
+                    registers[0xF] = (VY >= VX); // for whatever reason, it's backwards
                     break;
                 case 0x6: // 8XY6 shift right
                     if (COSMAC_MODE) {
@@ -141,10 +141,10 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     break;
                 case 0xE: // 8XYE shift left
                     if (COSMAC_MODE) {
-                    VX = VY;
+                        VX = VY;
                     }
-                    registers[0xF] = VX & ((uint8_t)1 << 7);
                     registers[X] = VX << 1;
+                    registers[0xF] = VX >> 7;
                     break;
             }
             break;
@@ -170,7 +170,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             registers[0xF] = 0; // set to 1 if collision happens
             for (int row = 0; row < N && (row+yc) < 32; row++) {
                 uint64_t sprite = memory[register_index + row];
-                sprite = (xc <= 56) ? sprite << (56-xc) : xc >> (xc-56); //rightshift instead if it clips off
+                sprite = (xc <= 56) ? sprite << (56-xc) : sprite >> (xc-56); //rightshift instead if it clips off
                 if (display[yc+row] & sprite) {
                     registers[0xF] = 1; // collision happened
                 }
@@ -180,7 +180,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
             render_display();
             break;
         case 0xE:
-            uint16_t mask = (uint16_t)1 << registers[X];
+            uint16_t mask = 1 << (VX & 0xF);
             uint16_t key_down = keyboard & mask;
             switch (NN) {
                 case 0x9E: // EX9E skip forward if key down
@@ -208,7 +208,7 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     break;
                 case 0x1E: // FX1E add VX to the index register thingamabob
                     register_index += registers[X];
-                    if (!COSMAC_MODE) {
+                    if (AMIGA_MODE) {
                         registers[0xF] = register_index > 0x1000;
                     }
                     break;
@@ -220,20 +220,12 @@ void execute_instruction(uint8_t byte1, uint8_t byte2) {
                     }
                     break;
                 case 0x29: // FX29 set index reg to whereever the index of a character sprite thingy specified by VX is kept in memory
-                    register_index = 0x50 + registers[X];
+                    register_index = 0x50 + registers[X] * 5;
                     break;
                 case 0x33: // FX33 convert VX to 3 decimal digits, store in 3 parts starting at memory[indexreg]
-                    uint8_t VX = registers[X];
-                    uint8_t hundreds,tens,ones;
-                    ones = VX % 10;
-                    VX -= ones;
-                    tens = (VX % 100)/10;
-                    VX -= tens;
-                    hundreds = VX/100;
-
-                    memory[register_index] = hundreds;
-                    memory[register_index+1] = tens;
-                    memory[register_index+2] = ones;
+                    memory[register_index] = VX/100;
+                    memory[register_index+1] = (VX/10)%10;
+                    memory[register_index+2] = VX%10;
                     break;
                 case 0x55: // FX55 store the values in the registry from V0 to VX in memory starting at I 
                     for (int i = 0; i <= X; i++) {
