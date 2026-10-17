@@ -268,7 +268,8 @@ void step_execution_loop(void) {
 void load_file(FILE *file_pointer) {
     program_counter = 0x200;
     register_index = 0;
-    delay_timer,sound_timer = 0,0;
+    delay_timer = 0;
+    sound_timer = 0;
     stack_position = 0;
     memcpy(memory+0x50,fontset,sizeof(fontset));
     memset(stack,0,sizeof(stack));
@@ -282,7 +283,7 @@ void loop(void) {
     while (1) {
         clock_t current_time = clock();
         if ((current_time-last_frame) > FRAME_SLEEP_TIME) {
-            last_frame += CPU_SLEEP_TIME;
+            last_frame += FRAME_SLEEP_TIME;
             if (delay_timer) delay_timer--;
             if (sound_timer) sound_timer--;
             if (SHOULD_RENDER) render_display();
