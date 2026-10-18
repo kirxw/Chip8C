@@ -6,7 +6,7 @@ CFLAGS := -std=c99 -Wall
 LDLIBS :=
 
 ifeq ($(OS),Windows_NT)
-	CFLAGS += -I$(SDL2_PATH)/include
+	CFLAGS := -I$(SDL2_PATH)/include/SDL2
 	LDLIBS += -L$(SDL2_PATH)/lib -lSDL2
 else
 	CFLAGS += $(shell sdl2-config --cflags)
