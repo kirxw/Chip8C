@@ -2,8 +2,16 @@
 
 CC := gcc
 
-CFLAGS := $(shell sdl2-config --cflags) -std=c99 -Wall
-LDLIBS := $(shell sdl2-config --libs)
+CFLAGS := -std=c99 -Wall
+LDLIBS :=
+
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -I$(SDL2_PATH)/include
+	LDLIBS += -L$(SDL2_PATH)/lib -lSDL2
+else
+	CFLAGS += $(shell sdl2-config --cflags)
+	LDLIBS += $(shell sdl2-config --libs)
+endif
 
 SRC_DIR := src
 BUILD_DIR := build
@@ -24,6 +32,6 @@ $(EXEC): $(OBJS)
 all: $(EXEC)
 
 clean:
-	rm -rf $(EXEC) $(OBJS)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: all clean
