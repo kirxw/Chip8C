@@ -3,6 +3,7 @@
 #define chip8_headers
 
 #include <stdint.h> // i don't THINK this will result in multiple inclusions?
+#include <stdio.h>
 
 extern uint64_t display[32];
 extern uint16_t keyboard;
