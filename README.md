@@ -5,31 +5,31 @@ This is, unsurprisingly, a Chip-8 emulator written entirely in C! It takes a pat
 * Crt-esque display (pixels turned off fade out over time)
 * Options to turn on quirks for the COSMAC VIP or the AMIGA
 ## Download
-
+nvm
 ## Building Chip8C Yourself
 ### Requirements
 You'll need ``gcc``,`make`, and the [SDL2 development libraries](https://www.libsdl.org/) installed.
-#### SDL2 on Arch
+#### Arch
 ```bash
 sudo pacman -S sdl2-compat
 ```
-#### SDL2 on Debian / Ubuntu
+#### Debian / Ubuntu
 ```bash
 sudo apt install build-essential libsdl2-dev libsdl2-image-dev
 ```
-#### SDL2 on MacOs (Via Homebrew)
+#### MacOs (Via Homebrew)
 ```bash
 brew install sdl2 sdl2_image
 ```
-#### SDL2 on Fedora / Red Hat
+#### Fedora / Red Hat
 ```bash
 sudo dnf groupinstall "Development Tools"
 sudo dnf install SDL2-devel SDL2_image-devel
 ```
-#### SDL2 on Windows
+#### Windows
 Ima be real for this one you're gonna use MSYS2 or write your own makefile <3
 
-## Compilation
+### Compilation
 Run `make` from the root of the project directory. The binary will appear in the automatically generated `build` folder.
 
 ## Usage
@@ -51,3 +51,6 @@ Z,C     ->     A,B
 4,R,F,V -> C,D,E,F
 X       ->       0
 ```
+# A bit about me...
+I've always been interested in computers at a lower level, but this was was my first time ever using C or writing an emulator! Throwing myself at this ill-prepared caused so many headaches, but I enjoyed every minute of it. Theres no way I could've done it without [Tvil's building a Chip8 emulator guide](https://tobiasvl.github.io/blog/write-a-chip-8-emulator) and the [amazing C guide](https://beej.us/guide/bgc/html/) on beej.us.
+Aside from that, this is my first ship on hackclub 🎉 (please be kind :3)
