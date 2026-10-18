@@ -5,7 +5,7 @@ This is, unsurprisingly, a Chip-8 emulator written entirely in C! It takes a pat
 * Crt-esque display (pixels turned off fade out over time)
 * Options to turn on quirks for the COSMAC VIP or the AMIGA
 ## Download
-nvm
+You can download a pre-compiled binary of this emulator at https://github.com/kirxw/Chip8C/releases/latest. Scroll down to the usage section to see how to run it!
 ## Building Chip8C Yourself
 ### Requirements
 You'll need ``gcc``,`make`, and the [SDL2 development libraries](https://www.libsdl.org/) installed.
@@ -30,12 +30,12 @@ sudo dnf install SDL2-devel SDL2_image-devel
 Ima be real for this one you're gonna use MSYS2 or write your own makefile <3
 
 ### Compilation
-Run `make` from the root of the project directory. The binary will appear in the automatically generated `build` folder.
+Run `make` from the root of the project directory. The executable will appear in the automatically generated `build` folder.
 
 ## Usage
-To load and execute a binary with Chip8C, simply run your compiled chip8 executable with the first argument as a path to your target binary.
+To load and execute a binary with Chip8C, simply run your compiled chip8 executable in your terminal with the first argument as a path to your target binary.
 ```
-$./build/chip8 <path_to_binary>
+$./chip8 <path_to_binary>
 ```
 COSMAC mode and AMIGA mode can be enabled by appending the arguments ``-c`` and ``-a`` respectively. Both may be enabled simultaneously, although I can't imagine a scenario where you'd need it :3
 ```
@@ -51,6 +51,8 @@ Z,C     ->     A,B
 4,R,F,V -> C,D,E,F
 X       ->       0
 ```
+## Where to get ROMS?
+I'm not going to deal with distributing roms, but you can find plenty to run with my emulator at https://github.com/kripod/chip8-roms
 # A bit about me...
 I've always been interested in computers at a lower level, but this was was my first time ever using C or writing an emulator! Throwing myself at this ill-prepared caused so many headaches, but I enjoyed every minute of it. Theres no way I could've done it without [Tvil's building a Chip8 emulator guide](https://tobiasvl.github.io/blog/write-a-chip-8-emulator) and the [amazing C guide](https://beej.us/guide/bgc/html/) on beej.us.
 Aside from that, this is my first ship on hackclub 🎉 (please be kind :3)
