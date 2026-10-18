@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "name": "default",
+      "includePath": [
+        "${workspaceFolder}/src",
+        "/usr/include/SDL2"
+      ],
+      "cStandard": "c99",
+      "intelliSenseMode": "${default}"
+    }
+  ],
+  "version": 4
+}

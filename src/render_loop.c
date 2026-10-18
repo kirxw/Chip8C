@@ -3,8 +3,8 @@
 #define SCREEN_WIDTH 64
 #define SCREEN_HEIGHT 32
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_timer.h>
+#include <SDL.h>
+#include <SDL_timer.h>
 #include <time.h>
 #include "chip8.h"
 
